@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\PostController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -23,8 +24,6 @@ Route::prefix('v1')->controller(AuthController::class)->group(function(){
 
 
 Route::middleware('auth:sanctum')->group(function(){
-    Route::post("/logout",[AuthController::class,"logout"]);
-    Route::get("/" , function(){
-        return response()->json(["message" => "profile"] , 200);
-    } );
+    Route::post("/logout",[AuthController::class,"logout"])->name("logout");
+    Route::apiResource("/post",PostController::class);
 });
