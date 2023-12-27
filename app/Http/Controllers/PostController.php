@@ -6,6 +6,9 @@ use App\Models\Post;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+
 
 class PostController extends Controller
 {
@@ -26,26 +29,40 @@ class PostController extends Controller
         $request->validate([
             "title" => "required|min:3",
             "description" => "required",
-            "image" => "required|image|mimes:jpeg,png,jpg,gif|max:2048", // Adjust the validation rules for your needs
+            "image" => "image|mimes:jpeg,png,jpg,gif|max:2048", // Adjust the validation rules for your needs
         ]);
 
 
+        // condition user
         if (Auth::check()) {
 
             $user = Auth::user();
 
             $user = User::find($user->id);
 
-              $post =  $user->posts()->create([
+            // post
+            $postAttribute = [
                 "title" => $request->title,
-                "description" => $request->description,
-                "image"  => $request->image
-            ]);
+                "description" => $request->description
+            ];
+
+            // condition image contain or not
+            if ($request->hasFile("image")) {
+
+                // this code is error !!
+                $file = $request->file('image');
+                $visibility = 'public';
+                $image = $file->store($file, $visibility);
+                $postAttribute['image'] = $image;
+            }
+            // create post
+            $post =  $user->posts()->create($postAttribute);
 
             return response()->json([
                 "data" => $post
-            ]);
+            ], 201);
         }
+
 
         return response()->json([
             'error' => 'Server Error',
