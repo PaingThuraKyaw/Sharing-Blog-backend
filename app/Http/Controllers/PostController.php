@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\PostResource;
+use App\Models\File;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -18,7 +20,8 @@ class PostController extends Controller
     public function index()
     {
         $posts = new Post();
-        return response()->json(["data" => $posts->all()], 200);
+
+        return response()->json(["data" => PostResource::collection($posts->all())], 200);
     }
 
     /**
@@ -46,17 +49,21 @@ class PostController extends Controller
                 "description" => $request->description
             ];
 
+                        // create post
+            $post =  $user->posts()->create($postAttribute);
+
             // condition image contain or not
             if ($request->hasFile("image")) {
 
                 // this code is error !!
-                $file = $request->file('image');
-                $visibility = 'public';
-                $image = $file->store($file, $visibility);
-                $postAttribute['image'] = $image;
+               $filePath = $request->file('image')->store('image', 'public');
+                $file = new File();
+                $file->image = $filePath;
+                $file->post_id = $post->id;
+                $file->post_type = Post::class;
+                $file->save();
             }
-            // create post
-            $post =  $user->posts()->create($postAttribute);
+
 
             return response()->json([
                 "data" => $post
