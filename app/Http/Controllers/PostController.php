@@ -9,7 +9,6 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 
 class PostController extends Controller
@@ -46,17 +45,18 @@ class PostController extends Controller
             // post
             $postAttribute = [
                 "title" => $request->title,
-                "description" => $request->description
+                "description" => $request->description,
+                "owner"  => $user->name
             ];
 
-                        // create post
+            // create post
             $post =  $user->posts()->create($postAttribute);
 
             // condition image contain or not
             if ($request->hasFile("image")) {
 
                 // this code is error !!
-               $filePath = $request->file('image')->store('image', 'public');
+                $filePath = $request->file('image')->store('image', 'public');
                 $file = new File();
                 $file->image = $filePath;
                 $file->post_id = $post->id;
@@ -81,22 +81,73 @@ class PostController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $post = Post::findOrFail($id);
+        $detailPost = new PostResource($post);
+        return response()->json(["data" => $detailPost]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
-    {
-        //
+public function update(Request $request, string $id)
+{
+    $post = Post::findOrFail($id);
+    $image = File::findOrFail($post->id);
+
+    // // Validate the incoming request data
+    // $request->validate([
+    //     "title" => "required|min:3",
+    //     "description" => "required",
+    //     "image" => "image|mimes:jpeg,png,jpg,gif|max:2048", // Adjust the validation rules for your needs
+    // ]);
+
+    // Update post attributes
+    $post->title = $request->title;
+    $post->description = $request->description;
+
+    // // Update image if provided in the request
+    if ($request->hasFile("image")) {
+        // Delete the old image file, if exists
+        if ($image->image) {
+            Storage::disk('public')->delete($image->image);
+            $image->delete();
+        }
+
+    //     // Store the new image file
+        $filePath = $request->file('image')->store('image', 'public');
+        $file = new File();
+        $file->image = $filePath;
+        $file->post_id = $post->id;
+        $file->post_type = Post::class;
+        $file->save();
     }
+
+    // // Save the changes
+    $post->save();
+
+    // Return the updated post
+    return response()->json([
+        "data" => new PostResource($post),
+        "message" => "Post updated successfully"
+    ], 200);
+
+}
+
 
     /**
      * Remove the specified resource from storage.
      */
     public function destroy(string $id)
     {
-        //
+        $post = Post::findOrFail($id);
+        $image = File::findOrFail($post->id) ;
+
+        Storage::disk('public')->delete($image->image);
+        $image->delete();
+        $post->delete();
+        return response()->json(["data" => [
+            "status"  => true,
+            "message" => "post deleted"
+        ]]);
     }
 }
