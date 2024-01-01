@@ -26,5 +26,6 @@ Route::prefix('v1')->controller(AuthController::class)->group(function(){
 Route::middleware('auth:sanctum')->group(function(){
     Route::post("/logout",[AuthController::class,"logout"])->name("logout");
     Route::apiResource("/post",PostController::class);
+    Route::get("/me",[PostController::class,"profile"])->name("me");
 });
 
